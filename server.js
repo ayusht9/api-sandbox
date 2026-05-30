@@ -132,6 +132,19 @@ app.delete('/api/products/:id', (req, res) => {
     });
 });
 
+// Auto-discovery endpoint
+app.get('/api/endpoints', (req, res) => {
+    const endpoints = [
+        { path: '/api/products', methods: ['GET', 'POST'] },
+        { path: '/api/products/:id', methods: ['GET', 'PUT', 'DELETE'] },
+        { path: '/api/endpoints', methods: ['GET'] }
+    ];
+    res.json({
+        message: 'success',
+        data: endpoints
+    });
+});
+
 // Start the server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);

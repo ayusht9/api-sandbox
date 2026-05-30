@@ -1,0 +1,159 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Network, Search, Loader2, RefreshCw, ChevronRight, Globe } from 'lucide-react';
+
+export default function EndpointSidebar({ onSelectEndpoint }) {
+  const [endpoints, setEndpoints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [discoveryUrl, setDiscoveryUrl] = useState('http://localhost:3000/api/endpoints');
+  const [baseUrl, setBaseUrl] = useState('');
+
+  useEffect(() => {
+    fetchEndpoints();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchEndpoints = async () => {
+    if (!discoveryUrl) return;
+    setLoading(true);
+    setEndpoints([]);
+    setBaseUrl('');
+    
+    try {
+      const res = await axios.get(discoveryUrl);
+      const data = res.data;
+
+      // Handle standard Mock API format
+      if (data && data.data && Array.isArray(data.data)) {
+        setEndpoints(data.data);
+        return;
+      }
+
+      // Handle OpenAPI / Swagger format
+      if (data && (data.swagger || data.openapi) && data.paths) {
+        // Extract Base URL
+        let extractedBaseUrl = '';
+        if (data.openapi && data.servers && data.servers.length > 0) {
+           extractedBaseUrl = data.servers[0].url;
+        } else if (data.swagger) {
+           const scheme = data.schemes && data.schemes.length > 0 ? data.schemes[0] : 'https';
+           const host = data.host || '';
+           const basePath = data.basePath || '';
+           if (host) extractedBaseUrl = `${scheme}://${host}${basePath}`;
+        }
+        
+        // Normalize base URL (remove trailing slash)
+        if (extractedBaseUrl.endsWith('/')) {
+            extractedBaseUrl = extractedBaseUrl.slice(0, -1);
+        }
+        setBaseUrl(extractedBaseUrl);
+
+        // Parse Paths
+        const parsedEndpoints = [];
+        for (const [path, methodsObj] of Object.entries(data.paths)) {
+          const methods = Object.keys(methodsObj)
+            .filter(m => ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'].includes(m.toLowerCase()))
+            .map(m => m.toUpperCase());
+          
+          if (methods.length > 0) {
+            parsedEndpoints.push({ path, methods });
+          }
+        }
+        setEndpoints(parsedEndpoints);
+      } else {
+        console.error('Unknown discovery format');
+      }
+    } catch (err) {
+      console.error('Failed to fetch endpoints', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMethodColor = (method) => {
+    switch (method) {
+      case 'GET': return '#10b981'; // Emerald 500
+      case 'POST': return '#3b82f6'; // Blue 500
+      case 'PUT': return '#f59e0b'; // Amber 500
+      case 'DELETE': return '#ef4444'; // Red 500
+      case 'PATCH': return '#8b5cf6'; // Violet 500
+      default: return '#94a3b8'; // Slate 400
+    }
+  };
+
+  const filteredEndpoints = endpoints.filter(ep => 
+    ep.path.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="panel-container glass-panel sidebar">
+      <div className="panel-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Network size={20} /> Endpoints
+        </div>
+      </div>
+      
+      <div className="discovery-bar">
+        <Globe size={16} className="search-icon" />
+        <input 
+          type="text" 
+          placeholder="Discovery / OpenAPI URL" 
+          value={discoveryUrl}
+          onChange={(e) => setDiscoveryUrl(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && fetchEndpoints()}
+        />
+        <button 
+          className="btn-icon" 
+          onClick={fetchEndpoints}
+          title="Fetch Endpoints"
+          style={{ padding: '0.25rem' }}
+        >
+          <RefreshCw size={16} />
+        </button>
+      </div>
+
+      <div className="search-bar">
+        <Search size={16} className="search-icon" />
+        <input 
+          type="text" 
+          placeholder="Filter paths..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className="endpoint-list">
+        {loading ? (
+          <div className="sidebar-loading">
+            <Loader2 size={24} className="spinner" />
+          </div>
+        ) : filteredEndpoints.length === 0 ? (
+          <div className="sidebar-empty">No endpoints found.</div>
+        ) : (
+          filteredEndpoints.map((ep, idx) => (
+            <div key={idx} className="endpoint-group">
+              {ep.methods.map((method, mIdx) => (
+                <div 
+                  key={`${idx}-${mIdx}`} 
+                  className="endpoint-item"
+                  onClick={() => onSelectEndpoint(ep.path, method, baseUrl)}
+                  title={`Click to load ${method} ${ep.path}`}
+                >
+                  <span 
+                    className="method-badge" 
+                    style={{ backgroundColor: `${getMethodColor(method)}33`, color: getMethodColor(method) }}
+                  >
+                    {method}
+                  </span>
+                  <span className="path-text" style={{ flex: 1 }}>{ep.path}</span>
+                  <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
+                </div>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

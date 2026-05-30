@@ -3,10 +3,17 @@ import axios from 'axios';
 import { Activity } from 'lucide-react';
 import RequestPanel from './components/RequestPanel';
 import ResponsePanel from './components/ResponsePanel';
+import EndpointSidebar from './components/EndpointSidebar';
 
 function App() {
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [selectedEndpoint, setSelectedEndpoint] = useState(null);
+
+  const handleSelectEndpoint = (path, method, baseUrl) => {
+    const finalBaseUrl = baseUrl || 'http://localhost:3000';
+    setSelectedEndpoint({ url: `${finalBaseUrl}${path}`, method });
+  };
 
   const handleRequest = async (config) => {
     setLoading(true);
@@ -71,7 +78,8 @@ function App() {
       </header>
       
       <main className="main-content">
-        <RequestPanel onRequest={handleRequest} />
+        <EndpointSidebar onSelectEndpoint={handleSelectEndpoint} />
+        <RequestPanel onRequest={handleRequest} selectedEndpoint={selectedEndpoint} />
         <ResponsePanel response={response} loading={loading} />
       </main>
     </div>

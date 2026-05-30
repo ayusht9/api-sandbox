@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Plus, Trash2 } from 'lucide-react';
 
-export default function RequestPanel({ onRequest }) {
+export default function RequestPanel({ onRequest, selectedEndpoint }) {
   const [method, setMethod] = useState('GET');
   const [url, setUrl] = useState('http://localhost:3000/api/products');
   const [activeTab, setActiveTab] = useState('params');
   
+  useEffect(() => {
+    if (selectedEndpoint) {
+      setMethod(selectedEndpoint.method);
+      setUrl(selectedEndpoint.url);
+    }
+  }, [selectedEndpoint]);
+
   const [params, setParams] = useState([{ key: '', value: '' }]);
   const [headers, setHeaders] = useState([{ key: 'Content-Type', value: 'application/json' }]);
   const [body, setBody] = useState('{\n  \n}');
