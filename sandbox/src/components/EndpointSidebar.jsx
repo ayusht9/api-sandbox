@@ -8,6 +8,7 @@ export default function EndpointSidebar({ onSelectEndpoint }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [discoveryUrl, setDiscoveryUrl] = useState('http://localhost:3000/api/endpoints');
   const [baseUrl, setBaseUrl] = useState('');
+  const [errorMsg, setErrorMsg] = useState(null);
 
   useEffect(() => {
     fetchEndpoints();
@@ -19,9 +20,18 @@ export default function EndpointSidebar({ onSelectEndpoint }) {
     setLoading(true);
     setEndpoints([]);
     setBaseUrl('');
+    setErrorMsg(null);
     
     try {
-      const res = await axios.get(discoveryUrl);
+      let res;
+      if (discoveryUrl.startsWith('http://localhost:3000') || discoveryUrl.startsWith('/')) {
+        res = await axios.get(discoveryUrl);
+      } else {
+        res = await axios.post('http://localhost:3000/api/proxy', {
+          url: discoveryUrl,
+          method: 'GET'
+        });
+      }
       const data = res.data;
 
       // Handle standard Mock API format
@@ -62,9 +72,10 @@ export default function EndpointSidebar({ onSelectEndpoint }) {
         }
         setEndpoints(parsedEndpoints);
       } else {
-        console.error('Unknown discovery format');
+        setErrorMsg('Provided URL is not a valid OpenAPI/Swagger schema. Are you trying to make an API request? Paste this into the Request Panel on the right instead!');
       }
     } catch (err) {
+      setErrorMsg('Failed to fetch from the provided URL. Ensure it is accessible.');
       console.error('Failed to fetch endpoints', err);
     } finally {
       setLoading(false);
@@ -122,6 +133,12 @@ export default function EndpointSidebar({ onSelectEndpoint }) {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
+
+      {errorMsg && (
+        <div style={{ color: 'var(--error-color)', fontSize: '0.85rem', padding: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>
+          {errorMsg}
+        </div>
+      )}
 
       <div className="endpoint-list">
         {loading ? (

@@ -1,6 +1,7 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
+const axios = require('axios');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -143,6 +144,37 @@ app.get('/api/endpoints', (req, res) => {
         message: 'success',
         data: endpoints
     });
+});
+
+// CORS Proxy endpoint
+app.post('/api/proxy', async (req, res) => {
+    try {
+        const { url, method, headers, data } = req.body;
+        
+        if (!url) {
+            return res.status(400).json({ error: 'URL is required for proxy' });
+        }
+
+        const cleanHeaders = { ...headers };
+        delete cleanHeaders.host;
+        delete cleanHeaders.origin;
+        delete cleanHeaders.referer;
+
+        const proxyRes = await axios({
+            url,
+            method: method || 'GET',
+            headers: cleanHeaders,
+            data
+        });
+        
+        res.status(proxyRes.status).send(proxyRes.data);
+    } catch (err) {
+        if (err.response) {
+            res.status(err.response.status).send(err.response.data);
+        } else {
+            res.status(500).json({ error: err.message });
+        }
+    }
 });
 
 // Start the server

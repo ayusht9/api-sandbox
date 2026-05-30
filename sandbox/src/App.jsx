@@ -31,12 +31,26 @@ function App() {
         }
       }
 
-      const res = await axios({
-        method: config.method,
-        url: config.url,
-        headers: config.headers,
-        data: dataToSync,
-      });
+      let res;
+      if (config.url.startsWith('http://localhost:3000') || config.url.startsWith('/')) {
+        res = await axios({
+          method: config.method,
+          url: config.url,
+          headers: config.headers,
+          data: dataToSync,
+        });
+      } else {
+        res = await axios({
+          method: 'POST',
+          url: 'http://localhost:3000/api/proxy',
+          data: {
+            url: config.url,
+            method: config.method,
+            headers: config.headers,
+            data: dataToSync
+          }
+        });
+      }
 
       const endTime = performance.now();
       
