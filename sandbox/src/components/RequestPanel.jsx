@@ -165,16 +165,6 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
       <div className="panel-title">Request Configuration</div>
       
       <div className="input-row">
-        <button onClick={handleSend}>
-          <Play size={16} fill="currentColor" /> Send
-        </button>
-        <button 
-          className={`btn-icon ${isBookmarked ? 'bookmarked' : ''}`} 
-          onClick={toggleBookmark}
-          title={isBookmarked ? 'Remove Bookmark' : 'Bookmark this Request'}
-        >
-          <Star size={18} fill={isBookmarked ? 'currentColor' : 'none'} color={isBookmarked ? '#fbbf24' : 'currentColor'} />
-        </button>
         <div className="address-bar">
           <select 
             className={`method-select method-${method}`} 
@@ -194,6 +184,16 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
             onChange={(e) => setUrl(e.target.value)}
           />
         </div>
+        <button 
+          className={`btn-icon ${isBookmarked ? 'bookmarked' : ''}`} 
+          onClick={toggleBookmark}
+          title={isBookmarked ? 'Remove Bookmark' : 'Bookmark this Request'}
+        >
+          <Star size={18} fill={isBookmarked ? 'currentColor' : 'none'} color={isBookmarked ? '#fbbf24' : 'currentColor'} />
+        </button>
+        <button onClick={handleSend}>
+          <Play size={16} fill="currentColor" /> Send
+        </button>
       </div>
 
       <div className="tabs">

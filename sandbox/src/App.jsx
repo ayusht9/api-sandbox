@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Activity } from 'lucide-react';
+import { Activity, Sun, Moon } from 'lucide-react';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import RequestPanel from './components/RequestPanel';
 import ResponsePanel from './components/ResponsePanel';
@@ -12,6 +12,20 @@ function App() {
   const [selectedEndpoint, setSelectedEndpoint] = useState(null);
   const [bookmarks, setBookmarks] = useState([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved;
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -128,9 +142,19 @@ function App() {
 
   return (
     <div className="app-container">
-      <header className="header glass-panel">
-        <Activity size={24} color="var(--accent-color)" />
-        <h1>Aero Sandbox API</h1>
+      <header className="header glass-panel" style={{ justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <Activity size={24} color="var(--accent-color)" />
+          <h1>Aero Sandbox API</h1>
+        </div>
+        <button 
+          className="btn-icon" 
+          onClick={toggleTheme} 
+          title="Toggle Theme"
+          style={{ padding: '0.5rem' }}
+        >
+          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
       </header>
       
       <main className="main-content">
