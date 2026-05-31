@@ -1,48 +1,50 @@
-import React from 'react';
-import { Loader2 } from 'lucide-react';
+import React, { memo } from 'react';
+import { Box, Typography, CircularProgress, Chip } from '@mui/material';
+import { Code } from '@mui/icons-material';
 
-export default function ResponsePanel({ response, loading }) {
+const ResponsePanel = memo(function ResponsePanel({ response, loading }) {
   
   if (loading) {
     return (
-      <div className="panel-container glass-panel" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={32} className="spinner" style={{ color: 'var(--accent-color)' }} />
-        <div style={{ color: 'var(--text-secondary)', marginTop: '1rem' }}>Sending Request...</div>
+      <div className="panel-container glass-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress size={32} />
       </div>
     );
   }
 
   if (!response) {
     return (
-      <div className="panel-container glass-panel" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'var(--text-secondary)' }}>Enter a URL and click Send to get a response</div>
+      <div className="panel-container glass-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'var(--text-secondary)' }}>
+        <Code sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+        <Typography variant="body1">Send a request to see the response</Typography>
       </div>
     );
   }
 
   const { status, statusText, data, time, error } = response;
   const isSuccess = status >= 200 && status < 300;
+  const statusClass = isSuccess ? 'status-success' : 'status-error';
 
   return (
     <div className="panel-container glass-panel animate-fade-in">
       <div className="panel-title">Response</div>
       
       <div className="status-bar">
-        <div className={`status-badge ${isSuccess ? 'status-success' : 'status-error'}`}>
-          Status: {status} {statusText}
-        </div>
-        <div style={{ color: 'var(--text-secondary)' }}>
-          Time: <span style={{ color: 'var(--text-primary)' }}>{time} ms</span>
-        </div>
+        <Typography variant="body2">
+          Status: <Box component="span" className={`status-badge ${statusClass}`}>{status} {statusText}</Box>
+        </Typography>
+        <Typography variant="body2">
+          Time: <Box component="span" className="status-badge">{time} ms</Box>
+        </Typography>
       </div>
 
       <div className="response-body">
-        {error ? (
-          <pre style={{ color: 'var(--error-color)' }}>{error}</pre>
-        ) : (
-          <pre>{JSON.stringify(data, null, 2)}</pre>
-        )}
+        <pre>
+          {error ? error : JSON.stringify(data, null, 2)}
+        </pre>
       </div>
     </div>
   );
-}
+});
+
+export default ResponsePanel;

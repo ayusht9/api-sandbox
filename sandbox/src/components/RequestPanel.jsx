@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Plus, Trash2, Star } from 'lucide-react';
+import React, { useState, useEffect, memo } from 'react';
+import { Box, Button, IconButton, TextField, Select, MenuItem, Tabs, Tab, Typography } from '@mui/material';
+import { PlayArrow, Add, Delete, Star, StarBorder } from '@mui/icons-material';
 
-export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, onAddBookmark, onRemoveBookmark }) {
+const RequestPanel = memo(function RequestPanel({ onRequest, selectedEndpoint, bookmarks, onAddBookmark, onRemoveBookmark }) {
   const [method, setMethod] = useState('GET');
   const [url, setUrl] = useState('http://localhost:3000/api/products');
   const [activeTab, setActiveTab] = useState('params');
@@ -49,7 +50,6 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
   };
 
   const handleSend = () => {
-    // Construct actual URL with params
     let finalUrl = url;
     const validParams = params.filter(p => p.key.trim() !== '');
     if (validParams.length > 0) {
@@ -57,7 +57,6 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
       finalUrl += (finalUrl.includes('?') ? '&' : '?') + queryString;
     }
 
-    // Construct headers
     const headersObj = {};
     headers.forEach(h => {
       if (h.key.trim() !== '') headersObj[h.key] = h.value;
@@ -78,165 +77,166 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
   };
 
   const renderKeyValue = (state, setter) => (
-    <div className="kv-container animate-fade-in">
+    <Box className="kv-container animate-fade-in" sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       {state.map((item, index) => (
-        <div key={index} className="kv-row">
-          <input
-            className="kv-input"
+        <Box key={index} className="kv-row" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <TextField
+            size="small"
             placeholder="Key"
             value={item.key}
             onChange={(e) => handleChangeRow(index, 'key', e.target.value, setter, state)}
+            sx={{ flex: 1 }}
           />
-          <input
-            className="kv-input"
+          <TextField
+            size="small"
             placeholder="Value"
             value={item.value}
             onChange={(e) => handleChangeRow(index, 'value', e.target.value, setter, state)}
+            sx={{ flex: 1 }}
           />
-          <button 
-            className="btn-icon" 
-            onClick={() => handleRemoveRow(index, setter, state)}
-            title="Remove"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
+          <IconButton onClick={() => handleRemoveRow(index, setter, state)} color="error" size="small">
+            <Delete fontSize="small" />
+          </IconButton>
+        </Box>
       ))}
-      <button className="btn-add" onClick={() => handleAddRow(setter, state)}>
-        <Plus size={16} /> Add Row
-      </button>
-    </div>
+      <Button startIcon={<Add />} onClick={() => handleAddRow(setter, state)} variant="outlined" sx={{ mt: 1, borderColor: 'var(--input-border)', color: 'var(--text-primary)' }}>
+        Add Row
+      </Button>
+    </Box>
   );
 
   const renderAuth = () => (
-    <div className="auth-container animate-fade-in">
-      <div className="input-group" style={{ marginBottom: '1rem' }}>
-        <label className="input-label">Authorization Type</label>
-        <select 
+    <Box className="auth-container animate-fade-in" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Typography variant="body2" color="text.secondary" fontWeight={500}>Authorization Type</Typography>
+        <Select 
           value={authType} 
           onChange={(e) => setAuthType(e.target.value)}
-          style={{ width: '200px' }}
+          size="small"
+          sx={{ width: 200 }}
         >
-          <option>None</option>
-          <option>Bearer Token</option>
-          <option>Basic Auth</option>
-        </select>
-      </div>
+          <MenuItem value="None">None</MenuItem>
+          <MenuItem value="Bearer Token">Bearer Token</MenuItem>
+          <MenuItem value="Basic Auth">Basic Auth</MenuItem>
+        </Select>
+      </Box>
 
       {authType === 'Bearer Token' && (
-        <div className="input-group">
-          <label className="input-label">Token</label>
-          <input 
-            type="text" 
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography variant="body2" color="text.secondary" fontWeight={500}>Token</Typography>
+          <TextField 
+            size="small"
             placeholder="Enter Bearer Token" 
             value={bearerToken}
             onChange={(e) => setBearerToken(e.target.value)}
           />
-        </div>
+        </Box>
       )}
 
       {authType === 'Basic Auth' && (
-        <div className="auth-basic-grid">
-          <div className="input-group">
-            <label className="input-label">Username</label>
-            <input 
-              type="text" 
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>Username</Typography>
+            <TextField 
+              size="small"
               placeholder="Username" 
               value={basicUsername}
               onChange={(e) => setBasicUsername(e.target.value)}
             />
-          </div>
-          <div className="input-group">
-            <label className="input-label">Password</label>
-            <input 
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>Password</Typography>
+            <TextField 
+              size="small"
               type="password" 
               placeholder="Password" 
               value={basicPassword}
               onChange={(e) => setBasicPassword(e.target.value)}
             />
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 
   return (
     <div className="panel-container glass-panel">
       <div className="panel-title">Request Configuration</div>
       
-      <div className="input-row">
-        <div className="address-bar">
-          <select 
-            className={`method-select method-${method}`} 
+      <Box className="input-row" sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
+        <Box className="address-bar" sx={{ display: 'flex', flex: '1 1 100%', minWidth: '200px', border: '1px solid var(--input-border)', borderRadius: 2, overflow: 'hidden', bgcolor: 'var(--input-bg)', transition: 'all 0.2s ease', '&:focus-within': { borderColor: 'primary.main', boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)' } }}>
+          <Select 
             value={method} 
             onChange={(e) => setMethod(e.target.value)}
+            size="small"
+            sx={{ 
+              borderRadius: 0, 
+              borderRight: '1px solid var(--input-border)', 
+              fontWeight: 700, 
+              width: 100, 
+              bgcolor: 'rgba(255, 255, 255, 0.03)',
+              '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+              color: `var(--method-${method.toLowerCase()})`
+            }}
           >
-            <option>GET</option>
-            <option>POST</option>
-            <option>PUT</option>
-            <option>DELETE</option>
-            <option>PATCH</option>
-          </select>
-          <input 
-            className="url-input" 
+            <MenuItem value="GET">GET</MenuItem>
+            <MenuItem value="POST">POST</MenuItem>
+            <MenuItem value="PUT">PUT</MenuItem>
+            <MenuItem value="DELETE">DELETE</MenuItem>
+            <MenuItem value="PATCH">PATCH</MenuItem>
+          </Select>
+          <TextField 
+            variant="outlined"
             placeholder="Enter request URL" 
             value={url}
             onChange={(e) => setUrl(e.target.value)}
+            size="small"
+            sx={{ flex: 1, '& .MuiOutlinedInput-notchedOutline': { border: 'none' } }}
           />
-        </div>
-        <button 
-          className={`btn-icon ${isBookmarked ? 'bookmarked' : ''}`} 
+        </Box>
+        <IconButton 
           onClick={toggleBookmark}
           title={isBookmarked ? 'Remove Bookmark' : 'Bookmark this Request'}
+          sx={{ border: '1px solid var(--input-border)', borderRadius: 2, color: 'text.secondary', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
         >
-          <Star size={18} fill={isBookmarked ? 'currentColor' : 'none'} color={isBookmarked ? '#fbbf24' : 'currentColor'} />
-        </button>
-        <button onClick={handleSend}>
-          <Play size={16} fill="currentColor" /> Send
-        </button>
-      </div>
+          {isBookmarked ? <Star sx={{ color: '#fbbf24' }} /> : <StarBorder />}
+        </IconButton>
+        <Button variant="contained" onClick={handleSend} startIcon={<PlayArrow />} sx={{ px: 3 }}>
+          Send
+        </Button>
+      </Box>
 
-      <div className="tabs">
-        <div 
-          className={`tab ${activeTab === 'params' ? 'active' : ''}`}
-          onClick={() => setActiveTab('params')}
-        >
-          Params
-        </div>
-        <div 
-          className={`tab ${activeTab === 'auth' ? 'active' : ''}`}
-          onClick={() => setActiveTab('auth')}
-        >
-          Auth
-        </div>
-        <div 
-          className={`tab ${activeTab === 'headers' ? 'active' : ''}`}
-          onClick={() => setActiveTab('headers')}
-        >
-          Headers
-        </div>
-        <div 
-          className={`tab ${activeTab === 'body' ? 'active' : ''}`}
-          onClick={() => setActiveTab('body')}
-        >
-          Body
-        </div>
-      </div>
+      <Tabs 
+        value={activeTab} 
+        onChange={(e, val) => setActiveTab(val)} 
+        sx={{ mb: 2, borderBottom: '1px solid var(--panel-border)', minHeight: '36px', '& .MuiTab-root': { minHeight: '36px', py: 0.5, textTransform: 'none', color: 'text.secondary' } }}
+      >
+        <Tab value="params" label="Params" />
+        <Tab value="auth" label="Auth" />
+        <Tab value="headers" label="Headers" />
+        <Tab value="body" label="Body" />
+      </Tabs>
 
-      <div className="tab-content">
+      <Box className="tab-content" sx={{ flex: 1, overflowY: 'auto' }}>
         {activeTab === 'params' && renderKeyValue(params, setParams)}
         {activeTab === 'auth' && renderAuth()}
         {activeTab === 'headers' && renderKeyValue(headers, setHeaders)}
         {activeTab === 'body' && (
-          <textarea 
+          <TextField 
+            multiline
+            minRows={5}
             className="animate-fade-in"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Enter JSON body here..."
-            style={{ width: '100%' }}
+            fullWidth
+            sx={{ fontFamily: 'monospace' }}
+            inputProps={{ style: { fontFamily: 'monospace' } }}
           />
         )}
-      </div>
+      </Box>
     </div>
   );
-}
+});
+
+export default RequestPanel;

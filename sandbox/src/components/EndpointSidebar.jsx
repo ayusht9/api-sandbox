@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import axios from 'axios';
-import { Network, Search, Loader2, RefreshCw, ChevronRight, Globe, Bookmark, Trash2 } from 'lucide-react';
+import { Box, Button, IconButton, TextField, Tabs, Tab, CircularProgress, Typography } from '@mui/material';
+import { WifiTethering, Search as SearchIcon, Refresh, ChevronRight, Language, DeleteOutlined } from '@mui/icons-material';
 
-export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveBookmark }) {
+const EndpointSidebar = memo(function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveBookmark }) {
   const [activeTab, setActiveTab] = useState('discovered');
   const [endpoints, setEndpoints] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,15 +36,12 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
       }
       const data = res.data;
 
-      // Handle standard Mock API format
       if (data && data.data && Array.isArray(data.data)) {
         setEndpoints(data.data);
         return;
       }
 
-      // Handle OpenAPI / Swagger format
       if (data && (data.swagger || data.openapi) && data.paths) {
-        // Extract Base URL
         let extractedBaseUrl = '';
         if (data.openapi && data.servers && data.servers.length > 0) {
            extractedBaseUrl = data.servers[0].url;
@@ -54,13 +52,11 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
            if (host) extractedBaseUrl = `${scheme}://${host}${basePath}`;
         }
         
-        // Normalize base URL (remove trailing slash)
         if (extractedBaseUrl.endsWith('/')) {
             extractedBaseUrl = extractedBaseUrl.slice(0, -1);
         }
         setBaseUrl(extractedBaseUrl);
 
-        // Parse Paths
         const parsedEndpoints = [];
         for (const [path, methodsObj] of Object.entries(data.paths)) {
           const methods = Object.keys(methodsObj)
@@ -83,8 +79,6 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
     }
   };
 
-
-
   const listToRender = activeTab === 'discovered' ? endpoints : (bookmarks || []);
 
   const filteredEndpoints = listToRender.filter(ep => 
@@ -93,69 +87,62 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
 
   return (
     <div className="panel-container glass-panel sidebar">
-      <div className="panel-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Network size={20} /> Endpoints
-        </div>
-      </div>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+        <WifiTethering fontSize="small" sx={{ color: 'text.secondary' }} />
+        <Typography variant="subtitle1" fontWeight={600} color="text.secondary">Endpoints</Typography>
+      </Box>
 
-      <div className="sidebar-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', marginTop: '1rem' }}>
-        <button 
-          onClick={() => setActiveTab('discovered')}
-          style={{ flex: 1, padding: '0.5rem', background: activeTab === 'discovered' ? 'var(--input-bg)' : 'transparent', border: activeTab === 'discovered' ? '1px solid var(--input-border)' : '1px solid transparent', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-primary)' }}
-        >
-          Discovered
-        </button>
-        <button 
-          onClick={() => setActiveTab('bookmarks')}
-          style={{ flex: 1, padding: '0.5rem', background: activeTab === 'bookmarks' ? 'var(--input-bg)' : 'transparent', border: activeTab === 'bookmarks' ? '1px solid var(--input-border)' : '1px solid transparent', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-primary)' }}
-        >
-          Bookmarks
-        </button>
-      </div>
+      <Tabs 
+        value={activeTab} 
+        onChange={(e, val) => setActiveTab(val)} 
+        sx={{ mb: 1, mt: 1, minHeight: '36px', '& .MuiTab-root': { minHeight: '36px', py: 0.5, textTransform: 'none', color: 'text.secondary' } }}
+        variant="fullWidth"
+      >
+        <Tab value="discovered" label="Discovered" />
+        <Tab value="bookmarks" label="Bookmarks" />
+      </Tabs>
       
       {activeTab === 'discovered' && (
-        <div className="discovery-bar" style={{ marginBottom: '0.5rem' }}>
-          <Globe size={16} className="search-icon" />
-          <input 
-            type="text" 
+        <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 2, p: 0.5, mb: 1, pl: 1 }}>
+          <Language fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
+          <TextField 
+            variant="standard"
             placeholder="Discovery / OpenAPI URL" 
             value={discoveryUrl}
             onChange={(e) => setDiscoveryUrl(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && fetchEndpoints()}
+            InputProps={{ disableUnderline: true }}
+            sx={{ flex: 1 }}
           />
-          <button 
-            className="btn-icon" 
-            onClick={fetchEndpoints}
-            title="Fetch Endpoints"
-            style={{ padding: '0.25rem' }}
-          >
-            <RefreshCw size={16} />
-          </button>
-        </div>
+          <IconButton onClick={fetchEndpoints} size="small" color="primary">
+            <Refresh fontSize="small" />
+          </IconButton>
+        </Box>
       )}
 
-      <div className="search-bar">
-        <Search size={16} className="search-icon" />
-        <input 
-          type="text" 
+      <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 2, p: 0.5, mb: 1, pl: 1 }}>
+        <SearchIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
+        <TextField 
+          variant="standard"
           placeholder="Filter paths..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{ disableUnderline: true }}
+          sx={{ flex: 1 }}
         />
-      </div>
+      </Box>
 
       {errorMsg && (
-        <div style={{ color: 'var(--error-color)', fontSize: '0.85rem', padding: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>
+        <Typography variant="caption" sx={{ color: 'error.main', p: 1, bgcolor: 'error.light', borderRadius: 1, mb: 1, opacity: 0.8 }}>
           {errorMsg}
-        </div>
+        </Typography>
       )}
 
       <div className="endpoint-list">
         {activeTab === 'discovered' ? (
           loading ? (
             <div className="sidebar-loading">
-              <Loader2 size={24} className="spinner" />
+              <CircularProgress size={24} />
             </div>
           ) : filteredEndpoints.length === 0 ? (
             <div className="sidebar-empty">No endpoints found.</div>
@@ -173,7 +160,7 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
                       {method}
                     </span>
                     <span className="path-text" style={{ flex: 1 }}>{ep.path}</span>
-                    <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
+                    <ChevronRight fontSize="small" sx={{ color: 'text.secondary' }} />
                   </div>
                 ))}
               </div>
@@ -195,9 +182,9 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
                     {ep.method}
                   </span>
                   <span className="path-text" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.url}</span>
-                  <button className="btn-icon" onClick={(e) => { e.stopPropagation(); onRemoveBookmark(ep.url, ep.method); }} title="Delete Bookmark">
-                    <Trash2 size={14} style={{ color: 'var(--error-color)', padding: '0' }} />
-                  </button>
+                  <IconButton onClick={(e) => { e.stopPropagation(); onRemoveBookmark(ep.url, ep.method); }} size="small" color="error" sx={{ p: 0.5 }}>
+                    <DeleteOutlined fontSize="small" />
+                  </IconButton>
                 </div>
               ))}
             </div>
@@ -206,4 +193,6 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
       </div>
     </div>
   );
-}
+});
+
+export default EndpointSidebar;

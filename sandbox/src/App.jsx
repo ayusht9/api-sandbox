@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
-import { Activity, Sun, Moon } from 'lucide-react';
+import { ThemeProvider, createTheme, CssBaseline, Box, IconButton, Typography } from '@mui/material';
+import { LightMode, DarkMode, Bolt } from '@mui/icons-material';
 import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import RequestPanel from './components/RequestPanel';
 import ResponsePanel from './components/ResponsePanel';
@@ -23,9 +24,50 @@ function App() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
+  }, []);
+
+  const muiTheme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode: theme,
+          primary: {
+            main: theme === 'light' ? '#2563eb' : '#3b82f6',
+          },
+          background: {
+            default: 'transparent',
+            paper: 'transparent',
+          }
+        },
+        typography: {
+          fontFamily: 'Inter, sans-serif',
+          button: {
+            textTransform: 'none',
+            fontWeight: 600,
+          }
+        },
+        components: {
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                borderRadius: '8px',
+                boxShadow: 'none',
+              },
+            },
+          },
+          MuiOutlinedInput: {
+            styleOverrides: {
+              root: {
+                borderRadius: '8px',
+              }
+            }
+          }
+        }
+      }),
+    [theme]
+  );
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -33,11 +75,7 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    fetchBookmarks();
-  }, []);
-
-  const fetchBookmarks = async () => {
+  const fetchBookmarks = useCallback(async () => {
     try {
       const res = await axios.get('http://localhost:3000/api/bookmarks');
       if (res.data && res.data.data) {
@@ -46,32 +84,36 @@ function App() {
     } catch (err) {
       console.error('Failed to fetch bookmarks', err);
     }
-  };
+  }, []);
 
-  const handleAddBookmark = async (url, method) => {
+  useEffect(() => {
+    fetchBookmarks();
+  }, [fetchBookmarks]);
+
+  const handleAddBookmark = useCallback(async (url, method) => {
     try {
       await axios.post('http://localhost:3000/api/bookmarks', { url, method });
       fetchBookmarks();
     } catch (err) {
       console.error('Failed to add bookmark', err);
     }
-  };
+  }, [fetchBookmarks]);
 
-  const handleRemoveBookmark = async (url, method) => {
+  const handleRemoveBookmark = useCallback(async (url, method) => {
     try {
       await axios.delete('http://localhost:3000/api/bookmarks', { data: { url, method } });
       fetchBookmarks();
     } catch (err) {
       console.error('Failed to remove bookmark', err);
     }
-  };
+  }, [fetchBookmarks]);
 
-  const handleSelectEndpoint = (path, method, baseUrl) => {
+  const handleSelectEndpoint = useCallback((path, method, baseUrl) => {
     const finalBaseUrl = baseUrl || 'http://localhost:3000';
     setSelectedEndpoint({ url: `${finalBaseUrl}${path}`, method });
-  };
+  }, []);
 
-  const handleRequest = async (config) => {
+  const handleRequest = useCallback(async (config) => {
     setLoading(true);
     setResponse(null);
     
@@ -138,26 +180,25 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return (
-    <div className="app-container">
-      <header className="header glass-panel" style={{ justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <Activity size={24} color="var(--accent-color)" />
-          <h1>Aero Sandbox API</h1>
-        </div>
-        <button 
-          className="btn-icon" 
-          onClick={toggleTheme} 
-          title="Toggle Theme"
-          style={{ padding: '0.5rem' }}
-        >
-          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-        </button>
-      </header>
-      
-      <main className="main-content">
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      <div className="app-container">
+        <header className="header glass-panel" style={{ justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Bolt sx={{ color: 'primary.main', fontSize: 28 }} />
+            <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.025em', background: 'linear-gradient(to right, #60a5fa, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Aero Sandbox API
+            </Typography>
+          </Box>
+          <IconButton onClick={toggleTheme} color="inherit">
+            {theme === 'light' ? <DarkMode /> : <LightMode />}
+          </IconButton>
+        </header>
+        
+        <main className="main-content">
         <PanelGroup direction={isMobile ? "vertical" : "horizontal"}>
           <Panel defaultSize={20} minSize={15}>
             <EndpointSidebar 
@@ -185,9 +226,10 @@ function App() {
           <Panel defaultSize={40} minSize={30}>
             <ResponsePanel response={response} loading={loading} />
           </Panel>
-        </PanelGroup>
-      </main>
-    </div>
+          </PanelGroup>
+        </main>
+      </div>
+    </ThemeProvider>
   );
 }
 
