@@ -2,6 +2,10 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-123';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -33,6 +37,14 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
                 method TEXT NOT NULL,
                 UNIQUE(url, method)
             )
+        `);
+
+        db.run(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL
+            )
         `, (err) => {
             if (err) {
                 console.error('Error creating table', err.message);
@@ -54,8 +66,79 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
 
 // RESTful API Routes
 
-// GET all products
-app.get('/api/products', (req, res) => {
+// --- Authentication Middleware & Endpoints ---
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    
+    // Support Bearer Token
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        jwt.verify(token, JWT_SECRET, (err, user) => {
+            if (err) return res.status(403).json({ error: 'Forbidden' });
+            req.user = user;
+            next();
+        });
+        return;
+    }
+    
+    // Support Basic Auth (if we wanted to parse it, but for now we only issue JWTs. We can parse Basic for demo)
+    if (authHeader && authHeader.startsWith('Basic ')) {
+        const b64auth = authHeader.split(' ')[1];
+        const [username, password] = Buffer.from(b64auth, 'base64').toString().split(':');
+        
+        db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+            const validPassword = await bcrypt.compare(password, user.password_hash);
+            if (!validPassword) return res.status(401).json({ error: 'Unauthorized' });
+            req.user = { id: user.id, username: user.username };
+            next();
+        });
+        return;
+    }
+
+    return res.status(401).json({ error: 'Unauthorized. Bearer or Basic token required.' });
+}
+
+app.post('/api/auth/register', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+    
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        db.run('INSERT INTO users (username, password_hash) VALUES (?, ?)', [username, hashedPassword], function(err) {
+            if (err) {
+                if (err.message.includes('UNIQUE constraint failed')) {
+                    return res.status(409).json({ error: 'Username already exists' });
+                }
+                return res.status(500).json({ error: err.message });
+            }
+            res.status(201).json({ message: 'User registered successfully', id: this.lastID });
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/auth/login', (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+
+    db.get('SELECT * FROM users WHERE username = ?', [username], async (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+
+        const validPassword = await bcrypt.compare(password, user.password_hash);
+        if (!validPassword) return res.status(401).json({ error: 'Invalid credentials' });
+
+        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ message: 'success', token });
+    });
+});
+
+// GET all products (Protected)
+app.get('/api/products', authenticateToken, (req, res) => {
     db.all('SELECT * FROM products', [], (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
@@ -68,8 +151,8 @@ app.get('/api/products', (req, res) => {
     });
 });
 
-// GET a single product by id
-app.get('/api/products/:id', (req, res) => {
+// GET a single product by id (Protected)
+app.get('/api/products/:id', authenticateToken, (req, res) => {
     const id = req.params.id;
     db.get('SELECT * FROM products WHERE id = ?', [id], (err, row) => {
         if (err) {
@@ -87,8 +170,8 @@ app.get('/api/products/:id', (req, res) => {
     });
 });
 
-// POST a new product
-app.post('/api/products', (req, res) => {
+// POST a new product (Protected)
+app.post('/api/products', authenticateToken, (req, res) => {
     const { name, description, price } = req.body;
     if (!name || !price) {
         res.status(400).json({ error: 'Name and price are required' });
@@ -108,8 +191,8 @@ app.post('/api/products', (req, res) => {
     });
 });
 
-// PUT (update) a product
-app.put('/api/products/:id', (req, res) => {
+// PUT (update) a product (Protected)
+app.put('/api/products/:id', authenticateToken, (req, res) => {
     const id = req.params.id;
     const { name, description, price } = req.body;
     
@@ -129,8 +212,8 @@ app.put('/api/products/:id', (req, res) => {
     );
 });
 
-// DELETE a product
-app.delete('/api/products/:id', (req, res) => {
+// DELETE a product (Protected)
+app.delete('/api/products/:id', authenticateToken, (req, res) => {
     const id = req.params.id;
     db.run('DELETE FROM products WHERE id = ?', [id], function(err) {
         if (err) {
@@ -149,6 +232,8 @@ app.get('/api/endpoints', (req, res) => {
     const endpoints = [
         { path: '/api/products', methods: ['GET', 'POST'] },
         { path: '/api/products/:id', methods: ['GET', 'PUT', 'DELETE'] },
+        { path: '/api/auth/register', methods: ['POST'] },
+        { path: '/api/auth/login', methods: ['POST'] },
         { path: '/api/endpoints', methods: ['GET'] }
     ];
     res.json({

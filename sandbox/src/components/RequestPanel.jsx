@@ -6,6 +6,11 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
   const [url, setUrl] = useState('http://localhost:3000/api/products');
   const [activeTab, setActiveTab] = useState('params');
   
+  const [authType, setAuthType] = useState('None');
+  const [bearerToken, setBearerToken] = useState('');
+  const [basicUsername, setBasicUsername] = useState('');
+  const [basicPassword, setBasicPassword] = useState('');
+  
   useEffect(() => {
     if (selectedEndpoint) {
       setMethod(selectedEndpoint.method);
@@ -58,6 +63,12 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
       if (h.key.trim() !== '') headersObj[h.key] = h.value;
     });
 
+    if (authType === 'Bearer Token' && bearerToken) {
+      headersObj['Authorization'] = `Bearer ${bearerToken}`;
+    } else if (authType === 'Basic Auth' && (basicUsername || basicPassword)) {
+      headersObj['Authorization'] = `Basic ${btoa(`${basicUsername}:${basicPassword}`)}`;
+    }
+
     onRequest({
       method,
       url: finalUrl,
@@ -94,6 +105,58 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
       <button className="btn-add" onClick={() => handleAddRow(setter, state)}>
         <Plus size={16} /> Add Row
       </button>
+    </div>
+  );
+
+  const renderAuth = () => (
+    <div className="auth-container animate-fade-in">
+      <div className="input-group" style={{ marginBottom: '1rem' }}>
+        <label className="input-label">Authorization Type</label>
+        <select 
+          value={authType} 
+          onChange={(e) => setAuthType(e.target.value)}
+          style={{ width: '200px' }}
+        >
+          <option>None</option>
+          <option>Bearer Token</option>
+          <option>Basic Auth</option>
+        </select>
+      </div>
+
+      {authType === 'Bearer Token' && (
+        <div className="input-group">
+          <label className="input-label">Token</label>
+          <input 
+            type="text" 
+            placeholder="Enter Bearer Token" 
+            value={bearerToken}
+            onChange={(e) => setBearerToken(e.target.value)}
+          />
+        </div>
+      )}
+
+      {authType === 'Basic Auth' && (
+        <div className="auth-basic-grid">
+          <div className="input-group">
+            <label className="input-label">Username</label>
+            <input 
+              type="text" 
+              placeholder="Username" 
+              value={basicUsername}
+              onChange={(e) => setBasicUsername(e.target.value)}
+            />
+          </div>
+          <div className="input-group">
+            <label className="input-label">Password</label>
+            <input 
+              type="password" 
+              placeholder="Password" 
+              value={basicPassword}
+              onChange={(e) => setBasicPassword(e.target.value)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -139,6 +202,12 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
           Params
         </div>
         <div 
+          className={`tab ${activeTab === 'auth' ? 'active' : ''}`}
+          onClick={() => setActiveTab('auth')}
+        >
+          Auth
+        </div>
+        <div 
           className={`tab ${activeTab === 'headers' ? 'active' : ''}`}
           onClick={() => setActiveTab('headers')}
         >
@@ -154,6 +223,7 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
 
       <div className="tab-content">
         {activeTab === 'params' && renderKeyValue(params, setParams)}
+        {activeTab === 'auth' && renderAuth()}
         {activeTab === 'headers' && renderKeyValue(headers, setHeaders)}
         {activeTab === 'body' && (
           <textarea 
