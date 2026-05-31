@@ -83,16 +83,7 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
     }
   };
 
-  const getMethodColor = (method) => {
-    switch (method) {
-      case 'GET': return '#10b981'; // Emerald 500
-      case 'POST': return '#3b82f6'; // Blue 500
-      case 'PUT': return '#f59e0b'; // Amber 500
-      case 'DELETE': return '#ef4444'; // Red 500
-      case 'PATCH': return '#8b5cf6'; // Violet 500
-      default: return '#94a3b8'; // Slate 400
-    }
-  };
+
 
   const listToRender = activeTab === 'discovered' ? endpoints : (bookmarks || []);
 
@@ -178,10 +169,7 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
                     onClick={() => onSelectEndpoint(ep.path, method, baseUrl)}
                     title={`Click to load ${method} ${ep.path}`}
                   >
-                    <span 
-                      className="method-badge" 
-                      style={{ backgroundColor: `${getMethodColor(method)}33`, color: getMethodColor(method) }}
-                    >
+                    <span className={`method-badge bg-method-${method}`}>
                       {method}
                     </span>
                     <span className="path-text" style={{ flex: 1 }}>{ep.path}</span>
@@ -203,10 +191,7 @@ export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveB
                   onClick={() => onSelectEndpoint(ep.url, ep.method, '')}
                   title={`Click to load ${ep.method} ${ep.url}`}
                 >
-                  <span 
-                    className="method-badge" 
-                    style={{ backgroundColor: `${getMethodColor(ep.method)}33`, color: getMethodColor(ep.method) }}
-                  >
+                  <span className={`method-badge bg-method-${ep.method}`}>
                     {ep.method}
                   </span>
                   <span className="path-text" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.url}</span>

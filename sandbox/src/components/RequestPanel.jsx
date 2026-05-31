@@ -165,23 +165,9 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
       <div className="panel-title">Request Configuration</div>
       
       <div className="input-row">
-        <select 
-          className="method-select" 
-          value={method} 
-          onChange={(e) => setMethod(e.target.value)}
-        >
-          <option>GET</option>
-          <option>POST</option>
-          <option>PUT</option>
-          <option>DELETE</option>
-          <option>PATCH</option>
-        </select>
-        <input 
-          className="url-input" 
-          placeholder="Enter request URL" 
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
+        <button onClick={handleSend}>
+          <Play size={16} fill="currentColor" /> Send
+        </button>
         <button 
           className={`btn-icon ${isBookmarked ? 'bookmarked' : ''}`} 
           onClick={toggleBookmark}
@@ -189,9 +175,25 @@ export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, o
         >
           <Star size={18} fill={isBookmarked ? 'currentColor' : 'none'} color={isBookmarked ? '#fbbf24' : 'currentColor'} />
         </button>
-        <button onClick={handleSend}>
-          <Play size={16} fill="currentColor" /> Send
-        </button>
+        <div className="address-bar">
+          <select 
+            className={`method-select method-${method}`} 
+            value={method} 
+            onChange={(e) => setMethod(e.target.value)}
+          >
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>DELETE</option>
+            <option>PATCH</option>
+          </select>
+          <input 
+            className="url-input" 
+            placeholder="Enter request URL" 
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="tabs">
