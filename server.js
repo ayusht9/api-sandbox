@@ -17,12 +17,23 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
     } else {
         console.log('Connected to the SQLite database.');
         // Create table and insert sample data
-        db.run(`CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            description TEXT,
-            price REAL NOT NULL
-        )`, (err) => {
+        db.run(`
+            CREATE TABLE IF NOT EXISTS products (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                price REAL NOT NULL,
+                description TEXT
+            )
+        `);
+
+        db.run(`
+            CREATE TABLE IF NOT EXISTS bookmarks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                url TEXT NOT NULL,
+                method TEXT NOT NULL,
+                UNIQUE(url, method)
+            )
+        `, (err) => {
             if (err) {
                 console.error('Error creating table', err.message);
             } else {
@@ -146,7 +157,39 @@ app.get('/api/endpoints', (req, res) => {
     });
 });
 
-// CORS Proxy endpoint
+// --- Bookmarks API ---
+
+app.get('/api/bookmarks', (req, res) => {
+    db.all("SELECT * FROM bookmarks", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'success', data: rows });
+    });
+});
+
+app.post('/api/bookmarks', (req, res) => {
+    const { url, method } = req.body;
+    if (!url || !method) return res.status(400).json({ error: 'URL and method are required' });
+    
+    db.run("INSERT OR IGNORE INTO bookmarks (url, method) VALUES (?, ?)", [url, method], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.status(201).json({ message: 'success', id: this.lastID });
+    });
+});
+
+app.delete('/api/bookmarks', (req, res) => {
+    // Usually DELETE requests use query params or URL params, but we can accept body too (some clients struggle, so we check query first)
+    const url = req.query.url || req.body.url;
+    const method = req.query.method || req.body.method;
+    
+    if (!url || !method) return res.status(400).json({ error: 'URL and method are required' });
+
+    db.run("DELETE FROM bookmarks WHERE url = ? AND method = ?", [url, method], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'success', changes: this.changes });
+    });
+});
+
+// --- CORS Proxy endpoint ---
 app.post('/api/proxy', async (req, res) => {
     try {
         const { url, method, headers, data } = req.body;

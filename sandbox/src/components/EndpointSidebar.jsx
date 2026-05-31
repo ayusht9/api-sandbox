@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Network, Search, Loader2, RefreshCw, ChevronRight, Globe } from 'lucide-react';
+import { Network, Search, Loader2, RefreshCw, ChevronRight, Globe, Bookmark, Trash2 } from 'lucide-react';
 
-export default function EndpointSidebar({ onSelectEndpoint }) {
+export default function EndpointSidebar({ onSelectEndpoint, bookmarks, onRemoveBookmark }) {
+  const [activeTab, setActiveTab] = useState('discovered');
   const [endpoints, setEndpoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,8 +94,10 @@ export default function EndpointSidebar({ onSelectEndpoint }) {
     }
   };
 
-  const filteredEndpoints = endpoints.filter(ep => 
-    ep.path.toLowerCase().includes(searchTerm.toLowerCase())
+  const listToRender = activeTab === 'discovered' ? endpoints : (bookmarks || []);
+
+  const filteredEndpoints = listToRender.filter(ep => 
+    (ep.path || ep.url).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -104,25 +107,42 @@ export default function EndpointSidebar({ onSelectEndpoint }) {
           <Network size={20} /> Endpoints
         </div>
       </div>
-      
-      <div className="discovery-bar">
-        <Globe size={16} className="search-icon" />
-        <input 
-          type="text" 
-          placeholder="Discovery / OpenAPI URL" 
-          value={discoveryUrl}
-          onChange={(e) => setDiscoveryUrl(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && fetchEndpoints()}
-        />
+
+      <div className="sidebar-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', marginTop: '1rem' }}>
         <button 
-          className="btn-icon" 
-          onClick={fetchEndpoints}
-          title="Fetch Endpoints"
-          style={{ padding: '0.25rem' }}
+          onClick={() => setActiveTab('discovered')}
+          style={{ flex: 1, padding: '0.5rem', background: activeTab === 'discovered' ? 'var(--input-bg)' : 'transparent', border: activeTab === 'discovered' ? '1px solid var(--input-border)' : '1px solid transparent', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-primary)' }}
         >
-          <RefreshCw size={16} />
+          Discovered
+        </button>
+        <button 
+          onClick={() => setActiveTab('bookmarks')}
+          style={{ flex: 1, padding: '0.5rem', background: activeTab === 'bookmarks' ? 'var(--input-bg)' : 'transparent', border: activeTab === 'bookmarks' ? '1px solid var(--input-border)' : '1px solid transparent', borderRadius: '4px', cursor: 'pointer', color: 'var(--text-primary)' }}
+        >
+          Bookmarks
         </button>
       </div>
+      
+      {activeTab === 'discovered' && (
+        <div className="discovery-bar" style={{ marginBottom: '0.5rem' }}>
+          <Globe size={16} className="search-icon" />
+          <input 
+            type="text" 
+            placeholder="Discovery / OpenAPI URL" 
+            value={discoveryUrl}
+            onChange={(e) => setDiscoveryUrl(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && fetchEndpoints()}
+          />
+          <button 
+            className="btn-icon" 
+            onClick={fetchEndpoints}
+            title="Fetch Endpoints"
+            style={{ padding: '0.25rem' }}
+          >
+            <RefreshCw size={16} />
+          </button>
+        </div>
+      )}
 
       <div className="search-bar">
         <Search size={16} className="search-icon" />
@@ -141,34 +161,62 @@ export default function EndpointSidebar({ onSelectEndpoint }) {
       )}
 
       <div className="endpoint-list">
-        {loading ? (
-          <div className="sidebar-loading">
-            <Loader2 size={24} className="spinner" />
-          </div>
-        ) : filteredEndpoints.length === 0 ? (
-          <div className="sidebar-empty">No endpoints found.</div>
+        {activeTab === 'discovered' ? (
+          loading ? (
+            <div className="sidebar-loading">
+              <Loader2 size={24} className="spinner" />
+            </div>
+          ) : filteredEndpoints.length === 0 ? (
+            <div className="sidebar-empty">No endpoints found.</div>
+          ) : (
+            filteredEndpoints.map((ep, idx) => (
+              <div key={idx} className="endpoint-group">
+                {ep.methods.map((method, mIdx) => (
+                  <div 
+                    key={`${idx}-${mIdx}`} 
+                    className="endpoint-item"
+                    onClick={() => onSelectEndpoint(ep.path, method, baseUrl)}
+                    title={`Click to load ${method} ${ep.path}`}
+                  >
+                    <span 
+                      className="method-badge" 
+                      style={{ backgroundColor: `${getMethodColor(method)}33`, color: getMethodColor(method) }}
+                    >
+                      {method}
+                    </span>
+                    <span className="path-text" style={{ flex: 1 }}>{ep.path}</span>
+                    <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
+                  </div>
+                ))}
+              </div>
+            ))
+          )
         ) : (
-          filteredEndpoints.map((ep, idx) => (
-            <div key={idx} className="endpoint-group">
-              {ep.methods.map((method, mIdx) => (
+          filteredEndpoints.length === 0 ? (
+            <div className="sidebar-empty">No bookmarks found.</div>
+          ) : (
+            <div className="endpoint-group">
+              {filteredEndpoints.map((ep, idx) => (
                 <div 
-                  key={`${idx}-${mIdx}`} 
+                  key={idx} 
                   className="endpoint-item"
-                  onClick={() => onSelectEndpoint(ep.path, method, baseUrl)}
-                  title={`Click to load ${method} ${ep.path}`}
+                  onClick={() => onSelectEndpoint(ep.url, ep.method, '')}
+                  title={`Click to load ${ep.method} ${ep.url}`}
                 >
                   <span 
                     className="method-badge" 
-                    style={{ backgroundColor: `${getMethodColor(method)}33`, color: getMethodColor(method) }}
+                    style={{ backgroundColor: `${getMethodColor(ep.method)}33`, color: getMethodColor(ep.method) }}
                   >
-                    {method}
+                    {ep.method}
                   </span>
-                  <span className="path-text" style={{ flex: 1 }}>{ep.path}</span>
-                  <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />
+                  <span className="path-text" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.url}</span>
+                  <button className="btn-icon" onClick={(e) => { e.stopPropagation(); onRemoveBookmark(ep.url, ep.method); }} title="Delete Bookmark">
+                    <Trash2 size={14} style={{ color: 'var(--error-color)', padding: '0' }} />
+                  </button>
                 </div>
               ))}
             </div>
-          ))
+          )
         )}
       </div>
     </div>

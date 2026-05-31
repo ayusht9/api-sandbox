@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity } from 'lucide-react';
 import RequestPanel from './components/RequestPanel';
@@ -9,6 +9,40 @@ function App() {
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedEndpoint, setSelectedEndpoint] = useState(null);
+  const [bookmarks, setBookmarks] = useState([]);
+
+  useEffect(() => {
+    fetchBookmarks();
+  }, []);
+
+  const fetchBookmarks = async () => {
+    try {
+      const res = await axios.get('http://localhost:3000/api/bookmarks');
+      if (res.data && res.data.data) {
+        setBookmarks(res.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch bookmarks', err);
+    }
+  };
+
+  const handleAddBookmark = async (url, method) => {
+    try {
+      await axios.post('http://localhost:3000/api/bookmarks', { url, method });
+      fetchBookmarks();
+    } catch (err) {
+      console.error('Failed to add bookmark', err);
+    }
+  };
+
+  const handleRemoveBookmark = async (url, method) => {
+    try {
+      await axios.delete('http://localhost:3000/api/bookmarks', { data: { url, method } });
+      fetchBookmarks();
+    } catch (err) {
+      console.error('Failed to remove bookmark', err);
+    }
+  };
 
   const handleSelectEndpoint = (path, method, baseUrl) => {
     const finalBaseUrl = baseUrl || 'http://localhost:3000';
@@ -92,8 +126,19 @@ function App() {
       </header>
       
       <main className="main-content">
-        <EndpointSidebar onSelectEndpoint={handleSelectEndpoint} />
-        <RequestPanel onRequest={handleRequest} selectedEndpoint={selectedEndpoint} />
+        <EndpointSidebar 
+          onSelectEndpoint={handleSelectEndpoint} 
+          bookmarks={bookmarks}
+          onRemoveBookmark={handleRemoveBookmark}
+        />
+        <RequestPanel 
+          onRequest={handleRequest} 
+          loading={loading} 
+          selectedEndpoint={selectedEndpoint}
+          bookmarks={bookmarks}
+          onAddBookmark={handleAddBookmark}
+          onRemoveBookmark={handleRemoveBookmark}
+        />
         <ResponsePanel response={response} loading={loading} />
       </main>
     </div>

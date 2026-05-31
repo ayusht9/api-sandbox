@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Plus, Trash2 } from 'lucide-react';
+import { Play, Plus, Trash2, Star } from 'lucide-react';
 
-export default function RequestPanel({ onRequest, selectedEndpoint }) {
+export default function RequestPanel({ onRequest, selectedEndpoint, bookmarks, onAddBookmark, onRemoveBookmark }) {
   const [method, setMethod] = useState('GET');
   const [url, setUrl] = useState('http://localhost:3000/api/products');
   const [activeTab, setActiveTab] = useState('params');
@@ -31,6 +31,16 @@ export default function RequestPanel({ onRequest, selectedEndpoint }) {
     const newState = [...state];
     newState[index][field] = value;
     setter(newState);
+  };
+
+  const isBookmarked = bookmarks?.some(b => b.url === url && b.method === method);
+
+  const toggleBookmark = () => {
+    if (isBookmarked) {
+      onRemoveBookmark(url, method);
+    } else {
+      onAddBookmark(url, method);
+    }
   };
 
   const handleSend = () => {
@@ -109,6 +119,13 @@ export default function RequestPanel({ onRequest, selectedEndpoint }) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
+        <button 
+          className={`btn-icon ${isBookmarked ? 'bookmarked' : ''}`} 
+          onClick={toggleBookmark}
+          title={isBookmarked ? 'Remove Bookmark' : 'Bookmark this Request'}
+        >
+          <Star size={18} fill={isBookmarked ? 'currentColor' : 'none'} color={isBookmarked ? '#fbbf24' : 'currentColor'} />
+        </button>
         <button onClick={handleSend}>
           <Play size={16} fill="currentColor" /> Send
         </button>
