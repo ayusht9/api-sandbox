@@ -75,17 +75,17 @@ body {
 .main-content {
   display: flex;
   flex: 1;
-  gap: 1.5rem;
   min-height: 0; /* Important for flex children scrolling */
 }
 
 .panel-container {
-  flex: 1;
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
   gap: 1rem;
+  overflow-x: hidden;
   overflow-y: auto;
+  height: 100%;
 }
 
 .panel-title {
@@ -307,11 +307,24 @@ button:disabled {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Sidebar Styles */
 .sidebar {
-  min-width: 250px;
-  max-width: 300px;
-  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-right: 0.5rem;
+}
+
+.custom-resizer {
+  width: 8px;
+  background-color: transparent;
+  cursor: col-resize;
+  transition: background-color 0.2s;
+  border-radius: 4px;
+  margin: 0 0.5rem;
+}
+
+.custom-resizer:hover, .custom-resizer[data-resize-handle-state="drag"] {
+  background-color: var(--accent-color);
 }
 
 .search-bar, .discovery-bar {

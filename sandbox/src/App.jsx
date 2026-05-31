@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Activity } from 'lucide-react';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
 import RequestPanel from './components/RequestPanel';
 import ResponsePanel from './components/ResponsePanel';
 import EndpointSidebar from './components/EndpointSidebar';
@@ -126,20 +127,34 @@ function App() {
       </header>
       
       <main className="main-content">
-        <EndpointSidebar 
-          onSelectEndpoint={handleSelectEndpoint} 
-          bookmarks={bookmarks}
-          onRemoveBookmark={handleRemoveBookmark}
-        />
-        <RequestPanel 
-          onRequest={handleRequest} 
-          loading={loading} 
-          selectedEndpoint={selectedEndpoint}
-          bookmarks={bookmarks}
-          onAddBookmark={handleAddBookmark}
-          onRemoveBookmark={handleRemoveBookmark}
-        />
-        <ResponsePanel response={response} loading={loading} />
+        <PanelGroup direction="horizontal">
+          <Panel defaultSize={20} minSize={15}>
+            <EndpointSidebar 
+              onSelectEndpoint={handleSelectEndpoint} 
+              bookmarks={bookmarks}
+              onRemoveBookmark={handleRemoveBookmark}
+            />
+          </Panel>
+          
+          <PanelResizeHandle className="custom-resizer" />
+          
+          <Panel defaultSize={40} minSize={30}>
+            <RequestPanel 
+              onRequest={handleRequest} 
+              loading={loading} 
+              selectedEndpoint={selectedEndpoint}
+              bookmarks={bookmarks}
+              onAddBookmark={handleAddBookmark}
+              onRemoveBookmark={handleRemoveBookmark}
+            />
+          </Panel>
+          
+          <PanelResizeHandle className="custom-resizer" />
+          
+          <Panel defaultSize={40} minSize={30}>
+            <ResponsePanel response={response} loading={loading} />
+          </Panel>
+        </PanelGroup>
       </main>
     </div>
   );
