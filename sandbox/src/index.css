@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-color: #0b1120; /* Darker Slate */
-  --panel-bg: rgba(15, 23, 42, 0.75); /* Deeper contrast */
+  --bg-color: #121212; /* Solid grey/dark background */
+  --panel-bg: rgba(30, 30, 30, 0.75);
   --panel-border: rgba(255, 255, 255, 0.08);
   --panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   --text-primary: #f8fafc; /* Slate 50 */
@@ -11,12 +11,10 @@
   --accent-hover: #2563eb; /* Blue 600 */
   --success-color: #10b981; /* Emerald 500 */
   --error-color: #f43f5e; /* Rose 500 */
-  --input-bg: rgba(15, 23, 42, 0.6);
+  --input-bg: rgba(45, 45, 45, 0.6);
   --input-border: rgba(255, 255, 255, 0.15);
   
-  --bg-gradient: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-                 radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
-                 radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+  --bg-gradient: none;
 
   /* HTTP Methods */
   --method-get: #10b981;

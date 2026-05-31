@@ -163,8 +163,8 @@ const RequestPanel = memo(function RequestPanel({ onRequest, selectedEndpoint, b
     <div className="panel-container glass-panel">
       <div className="panel-title">Request Configuration</div>
       
-      <Box className="input-row" sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-        <Box className="address-bar" sx={{ display: 'flex', flex: '1 1 100%', minWidth: '200px', border: '1px solid var(--input-border)', borderRadius: 2, overflow: 'hidden', bgcolor: 'var(--input-bg)', transition: 'all 0.2s ease', '&:focus-within': { borderColor: 'primary.main', boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)' } }}>
+      <Box className="input-row" sx={{ display: 'flex', gap: 1, mb: 1, flexWrap: 'nowrap' }}>
+        <Box className="address-bar" sx={{ display: 'flex', flex: 1, minWidth: '200px', border: '1px solid var(--input-border)', borderRadius: 2, overflow: 'hidden', bgcolor: 'var(--input-bg)', transition: 'all 0.2s ease', '&:focus-within': { borderColor: 'primary.main', boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.2)' } }}>
           <Select 
             value={method} 
             onChange={(e) => setMethod(e.target.value)}
@@ -222,16 +222,22 @@ const RequestPanel = memo(function RequestPanel({ onRequest, selectedEndpoint, b
         {activeTab === 'auth' && renderAuth()}
         {activeTab === 'headers' && renderKeyValue(headers, setHeaders)}
         {activeTab === 'body' && (
-          <TextField 
-            multiline
-            minRows={5}
+          <textarea 
             className="animate-fade-in"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Enter JSON body here..."
-            fullWidth
-            sx={{ fontFamily: 'monospace' }}
-            inputProps={{ style: { fontFamily: 'monospace' } }}
+            style={{ 
+              width: '100%', 
+              minHeight: '300px', 
+              fontFamily: 'monospace', 
+              padding: '1rem', 
+              background: 'var(--input-bg)', 
+              border: '1px solid var(--input-border)', 
+              color: 'var(--text-primary)', 
+              borderRadius: '8px',
+              resize: 'vertical'
+            }}
           />
         )}
       </Box>

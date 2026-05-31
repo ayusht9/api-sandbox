@@ -37,7 +37,7 @@ function App() {
             main: theme === 'light' ? '#2563eb' : '#3b82f6',
           },
           background: {
-            default: 'transparent',
+            default: theme === 'light' ? '#f8fafc' : '#121212',
             paper: 'transparent',
           }
         },
