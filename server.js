@@ -43,7 +43,8 @@ const db = new sqlite3.Database('./database.sqlite', (err) => {
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
-                password_hash TEXT NOT NULL
+                password_hash TEXT NOT NULL,
+                role TEXT DEFAULT 'user'
             )
         `, (err) => {
             if (err) {
@@ -92,7 +93,7 @@ function authenticateToken(req, res, next) {
 
             const validPassword = await bcrypt.compare(password, user.password_hash);
             if (!validPassword) return res.status(401).json({ error: 'Unauthorized' });
-            req.user = { id: user.id, username: user.username };
+            req.user = { id: user.id, username: user.username, role: user.role };
             next();
         });
         return;
@@ -101,13 +102,26 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized. Bearer or Basic token required.' });
 }
 
+function authenticateAdmin(req, res, next) {
+    authenticateToken(req, res, () => {
+        if (req.user && req.user.role === 'admin') {
+            next();
+        } else {
+            res.status(403).json({ error: 'Forbidden. Admin access required.' });
+        }
+    });
+}
+
 app.post('/api/auth/register', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, role } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+    if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    
+    const assignRole = role === 'admin' ? 'admin' : 'user';
     
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        db.run('INSERT INTO users (username, password_hash) VALUES (?, ?)', [username, hashedPassword], function(err) {
+        db.run('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)', [username, hashedPassword, assignRole], function(err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
                     return res.status(409).json({ error: 'Username already exists' });
@@ -132,9 +146,23 @@ app.post('/api/auth/login', (req, res) => {
         const validPassword = await bcrypt.compare(password, user.password_hash);
         if (!validPassword) return res.status(401).json({ error: 'Invalid credentials' });
 
-        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
         res.json({ message: 'success', token });
     });
+});
+
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+    db.get('SELECT id, username, role FROM users WHERE id = ?', [req.user.id], (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json({ message: 'success', data: user });
+    });
+});
+
+app.post('/api/auth/logout', authenticateToken, (req, res) => {
+    // JWTs are stateless, so logout is mostly a client-side action (discarding token).
+    // We provide this endpoint to test client-side logout flow.
+    res.json({ message: 'Logged out successfully. Please discard your token.' });
 });
 
 // GET all products (Protected)
@@ -212,8 +240,8 @@ app.put('/api/products/:id', authenticateToken, (req, res) => {
     );
 });
 
-// DELETE a product (Protected)
-app.delete('/api/products/:id', authenticateToken, (req, res) => {
+// DELETE a product (Protected - Admin Only)
+app.delete('/api/products/:id', authenticateAdmin, (req, res) => {
     const id = req.params.id;
     db.run('DELETE FROM products WHERE id = ?', [id], function(err) {
         if (err) {
@@ -234,6 +262,8 @@ app.get('/api/endpoints', (req, res) => {
         { path: '/api/products/:id', methods: ['GET', 'PUT', 'DELETE'] },
         { path: '/api/auth/register', methods: ['POST'] },
         { path: '/api/auth/login', methods: ['POST'] },
+        { path: '/api/auth/me', methods: ['GET'] },
+        { path: '/api/auth/logout', methods: ['POST'] },
         { path: '/api/endpoints', methods: ['GET'] }
     ];
     res.json({
