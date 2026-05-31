@@ -113,6 +113,7 @@ body {
 .input-row {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 input, select, textarea {
@@ -315,16 +316,43 @@ button:disabled {
 }
 
 .custom-resizer {
-  width: 8px;
   background-color: transparent;
-  cursor: col-resize;
   transition: background-color 0.2s;
   border-radius: 4px;
+}
+
+.custom-resizer[data-panel-group-direction="horizontal"] {
+  width: 8px;
+  cursor: col-resize;
   margin: 0 0.5rem;
+}
+
+.custom-resizer[data-panel-group-direction="vertical"] {
+  height: 8px;
+  cursor: row-resize;
+  margin: 0.5rem 0;
 }
 
 .custom-resizer:hover, .custom-resizer[data-resize-handle-state="drag"] {
   background-color: var(--accent-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  .header {
+    padding: 0.75rem 1rem;
+  }
+  .main-content {
+    flex-direction: column;
+  }
+  .sidebar {
+    padding-right: 0;
+    padding-bottom: 0.5rem;
+  }
 }
 
 .search-bar, .discovery-bar {

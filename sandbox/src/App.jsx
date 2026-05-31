@@ -11,6 +11,13 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [selectedEndpoint, setSelectedEndpoint] = useState(null);
   const [bookmarks, setBookmarks] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     fetchBookmarks();
@@ -127,7 +134,7 @@ function App() {
       </header>
       
       <main className="main-content">
-        <PanelGroup direction="horizontal">
+        <PanelGroup direction={isMobile ? "vertical" : "horizontal"}>
           <Panel defaultSize={20} minSize={15}>
             <EndpointSidebar 
               onSelectEndpoint={handleSelectEndpoint} 
