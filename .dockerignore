@@ -1,0 +1,7 @@
+node_modules
+sandbox/node_modules
+sandbox/dist
+database.sqlite
+.git
+.dockerignore
+build_output.txt
