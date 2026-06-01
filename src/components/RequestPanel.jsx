@@ -4,7 +4,7 @@ import { PlayArrow, Add, Delete, Star, StarBorder } from '@mui/icons-material';
 
 const RequestPanel = memo(function RequestPanel({ onRequest, selectedEndpoint, bookmarks, onAddBookmark, onRemoveBookmark }) {
   const [method, setMethod] = useState('GET');
-  const [url, setUrl] = useState('http://localhost:3000/api/products');
+  const [url, setUrl] = useState('https://jsonplaceholder.typicode.com/todos/1');
   const [activeTab, setActiveTab] = useState('params');
   
   const [authType, setAuthType] = useState('None');

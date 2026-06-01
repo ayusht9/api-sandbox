@@ -1,7 +1,13 @@
-FROM node:20
+# Build stage
+FROM node:20 AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --build-from-source=sqlite3
+RUN npm install
 COPY . .
-EXPOSE 3000
-CMD ["node", "server.js"]
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

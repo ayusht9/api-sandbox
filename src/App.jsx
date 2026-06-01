@@ -88,12 +88,15 @@ function App() {
 
   const fetchBookmarks = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:3000/api/bookmarks');
-      if (res.data && res.data.data) {
-        setBookmarks(res.data.data);
+      const saved = localStorage.getItem('bookmarks');
+      if (saved) {
+        setBookmarks(JSON.parse(saved));
+      } else {
+        setBookmarks([]);
       }
     } catch (err) {
-      console.error('Failed to fetch bookmarks', err);
+      console.error('Failed to parse bookmarks', err);
+      setBookmarks([]);
     }
   }, []);
 
@@ -103,8 +106,13 @@ function App() {
 
   const handleAddBookmark = useCallback(async (url, method) => {
     try {
-      await axios.post('http://localhost:3000/api/bookmarks', { url, method });
-      fetchBookmarks();
+      const saved = localStorage.getItem('bookmarks');
+      let current = saved ? JSON.parse(saved) : [];
+      if (!current.some(b => b.url === url && b.method === method)) {
+        current.push({ id: Date.now(), url, method });
+        localStorage.setItem('bookmarks', JSON.stringify(current));
+        fetchBookmarks();
+      }
     } catch (err) {
       console.error('Failed to add bookmark', err);
     }
@@ -112,7 +120,10 @@ function App() {
 
   const handleRemoveBookmark = useCallback(async (url, method) => {
     try {
-      await axios.delete('http://localhost:3000/api/bookmarks', { data: { url, method } });
+      const saved = localStorage.getItem('bookmarks');
+      let current = saved ? JSON.parse(saved) : [];
+      current = current.filter(b => !(b.url === url && b.method === method));
+      localStorage.setItem('bookmarks', JSON.stringify(current));
       fetchBookmarks();
     } catch (err) {
       console.error('Failed to remove bookmark', err);
@@ -120,7 +131,7 @@ function App() {
   }, [fetchBookmarks]);
 
   const handleSelectEndpoint = useCallback((path, method, baseUrl) => {
-    const finalBaseUrl = baseUrl || 'http://localhost:3000';
+    const finalBaseUrl = baseUrl || 'http://localhost:6000';
     setSelectedEndpoint({ url: `${finalBaseUrl}${path}`, method });
   }, []);
 
@@ -140,26 +151,14 @@ function App() {
         }
       }
 
-      let res;
-      if (config.url.startsWith('http://localhost:3000') || config.url.startsWith('/')) {
-        res = await axios({
-          method: config.method,
-          url: config.url,
-          headers: config.headers,
-          data: dataToSync,
-        });
-      } else {
-        res = await axios({
-          method: 'POST',
-          url: 'http://localhost:3000/api/proxy',
-          data: {
-            url: config.url,
-            method: config.method,
-            headers: config.headers,
-            data: dataToSync
-          }
-        });
-      }
+      // Just send the request directly since the proxy backend is removed.
+      // Note: This may cause CORS errors if the target server doesn't allow cross-origin requests.
+      const res = await axios({
+        method: config.method,
+        url: config.url,
+        headers: config.headers,
+        data: dataToSync,
+      });
 
       const endTime = performance.now();
       

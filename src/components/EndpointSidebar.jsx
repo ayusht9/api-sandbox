@@ -8,7 +8,7 @@ const EndpointSidebar = memo(function EndpointSidebar({ onSelectEndpoint, bookma
   const [endpoints, setEndpoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [discoveryUrl, setDiscoveryUrl] = useState('http://localhost:3000/api/endpoints');
+  const [discoveryUrl, setDiscoveryUrl] = useState('https://petstore.swagger.io/v2/swagger.json');
   const [baseUrl, setBaseUrl] = useState('');
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -25,15 +25,7 @@ const EndpointSidebar = memo(function EndpointSidebar({ onSelectEndpoint, bookma
     setErrorMsg(null);
     
     try {
-      let res;
-      if (discoveryUrl.startsWith('http://localhost:3000') || discoveryUrl.startsWith('/')) {
-        res = await axios.get(discoveryUrl);
-      } else {
-        res = await axios.post('http://localhost:3000/api/proxy', {
-          url: discoveryUrl,
-          method: 'GET'
-        });
-      }
+      const res = await axios.get(discoveryUrl);
       const data = res.data;
 
       if (data && data.data && Array.isArray(data.data)) {
